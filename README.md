@@ -1,3 +1,3 @@
 # Women4Health
 
-Here is the code used in manuscript Busonero et al 2023
+in this folder we share code used in manuscripts using the Women4Health cohort
