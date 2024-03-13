@@ -1,3 +1,5 @@
+This code was used for manuscript: Busonero et al, EHJ Open 2024, https://doi.org/10.1093/ehjopen/oeae012
+
 In this folder you will find two R codes.
 Those were used to:
 
