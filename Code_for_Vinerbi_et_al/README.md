@@ -30,4 +30,4 @@ Folder: 7. statistical_analyses_pipeline
 contains the pipeline to run the statistical analyses. There is a specific ReadME for this part, in to the folder.
 
 Folder: Public data
-contains the additional files needed for the analysis. sub-folder VALENCIA file you find the files to run VALENCIA algorithm. sub-folder DATABSE shows the different databases used (further subfolders).
+contains the additional files needed for the analysis. sub-folder VALENCIA file you find the files to run VALENCIA algorithm. sub-folder DATABASE shows the different databases used (further subfolders).
