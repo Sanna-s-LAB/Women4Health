@@ -1,6 +1,6 @@
 ReadME for pipeline scripts for vaginal microbiome data analysis through 16S method.
 
-# for questions please write to Elena Vinerbi (elenavinerbi@cnr.it), Fabio Chillotti (fabiochillotti@cnr.it) and Serena Sanna (serena.sanna@cnr.it) 
+for questions please write to Elena Vinerbi (elenavinerbi@cnr.it), Fabio Chillotti (fabiochillotti@cnr.it) and Serena Sanna (serena.sanna@cnr.it) 
 
 Date released: 03/02/2025
 
