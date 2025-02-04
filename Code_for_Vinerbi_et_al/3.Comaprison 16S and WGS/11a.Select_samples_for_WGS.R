@@ -62,8 +62,8 @@ max_crispatus
 df_crispatus <- subset(df_three, df_three$`Lactobacillus Lactobacillus crispatus` == max_crispatus)
 df_crispatus
 
-max_tawanensis <- max(df_three$`Lactobacillus Lactobacillus taiwanensis`)
-max_tawanensis
+max_gasseri <- max(df_three$`Lactobacillus Lactobacillus gasseri`)
+max_gasseri
 
 df_gasseri <- subset(df_three, df_three$`Lactobacillus Lactobacillus gasseri` == max_gasseri)
 df_gasseri 
