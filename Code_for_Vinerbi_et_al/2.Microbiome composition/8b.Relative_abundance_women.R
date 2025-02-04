@@ -67,7 +67,7 @@ First <- data.frame(rownames(df_1), df_1)
 colnames(First)[1] <- "Taxa"
 
 ## Add missing women for this week
-First$Code <- 0
+First$Code_women <- 0
 
 dim(First)
 
@@ -178,7 +178,7 @@ Second <- data.frame(rownames(df_2), df_2)
 colnames(Second)[1] <- "Taxa"
 
 # Add missin women
-Second$code <- 0
+Second$code_women <- 0
 dim(Second)
 
 M <- melt(Second)
@@ -222,7 +222,7 @@ Third <- data.frame(rownames(df_3), df_3)
 colnames(Third)[1] <- "Taxa"
 dim(Third)
 
-Third$code <- 0
+Third$code_women <- 0
 dim(Third)
 
 M <- melt(Third)
@@ -265,7 +265,7 @@ colnames(Fourth)[1] <- "Taxa"
 dim(Fourth)
 
 # Ad Missing value
-Fourth$code <- 0
+Fourth$code_women <- 0
 dim(Fourth)
 
 M <- melt(Fourth)
