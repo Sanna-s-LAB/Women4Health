@@ -3,10 +3,10 @@
 In this folder we share code used in manuscripts that use data from the the Women4Health cohort.
 ***please cite the corresponding papers if you use code from these folders - thank you!***
 
-1. Code_for_Busonero_et_al_2023 contains code for Busonero F. et al, EHJ Open 2024
-2. Code_for_Vinerbi_et_al contains code for Vinerbi E. et al, Medrxiv 2025 
+1. Code_for_Busonero_et_al_2023 contains code for Busonero F. et al, EHJ Open 2024 https://doi.org/10.1093/ehjopen/oeae012 
+2. Code_for_Vinerbi_et_al contains code for Vinerbi E. et al, Biorxiv 2025 https://doi.org/10.1101/2025.03.12.642767 
 
-The Women4Health cohort is funded by ERC Starting Grant 2022 to Serena Sanna (project SEMICYCLE), and to RC 2020 to Prof. Giorgia Girotto
+The Women4Health cohort is funded by ERC Starting Grant 2022 to Serena Sanna (project SEMICYCLE), and RC 2020 to Prof. Giorgia Girotto. Expansion have been funded via grants Age-it  (Ministero dell'Universita' e Ricerca MUR, bandi PNRR-P08) and NutrAge (CNR)
 
 Link to SEMICYCLE project:
 https://irgb.cnr.it/projects/w4h-2-3-6/
