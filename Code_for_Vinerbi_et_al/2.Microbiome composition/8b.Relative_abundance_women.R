@@ -3,7 +3,7 @@
 # Script to make a plot for each weeks and all women
 
 # Author: Elena Vinerbi (elenavinerbi@cnr.it)
-# Last update: 03/02/2025
+# Last update: 28/08/2025
 
 # R version: R 4.4.1
 
@@ -67,7 +67,7 @@ First <- data.frame(rownames(df_1), df_1)
 colnames(First)[1] <- "Taxa"
 
 ## Add missing women for this week
-First$Code_women <- 0
+First$Code <- 0
 
 dim(First)
 
@@ -134,7 +134,7 @@ P1 <- ggplot(Tab_def, aes(x = reorder(variable, Index), y = value, fill = Taxa))
   geom_bar(stat = "identity", position = "fill") +
   scale_y_continuous(labels = function(x) x * 100) +
   scale_fill_manual(values = col_taxa)+
-  labs(title = "", x = 'Samples (n=59)', y = 'Relative abundance') + # change number of women
+  labs(title = "", x = 'Follicular (F) - Samples (n=59/61)', y = 'Relative abundance') + # change number of women
   theme(axis.text.x = element_blank(),
     axis.title = element_text(size = 7, family = 'sans'),
     legend.text = element_text(size = 7, family = 'sans'),
@@ -178,7 +178,7 @@ Second <- data.frame(rownames(df_2), df_2)
 colnames(Second)[1] <- "Taxa"
 
 # Add missin women
-Second$code_women <- 0
+Second$code <- 0
 dim(Second)
 
 M <- melt(Second)
@@ -199,7 +199,7 @@ P2 <- ggplot(M_second, aes(x = reorder(variable, Index), y = value, fill = Taxa)
   geom_bar(stat = "identity", position = "fill") +
   scale_y_continuous(labels = function(x) x * 100) +
   scale_fill_manual(values = col_taxa) +
-  labs(title = "", x = 'Samples (n=58)', y = 'Relative abundance') + # change number of women
+  labs(title = "", x = 'Ovulatory (O) - Samples (n=58/61)', y = 'Relative abundance') + # change number of women
   theme(
     axis.text.x = element_blank(),
     axis.title = element_text(size = 7, family = 'sans'),
@@ -222,7 +222,7 @@ Third <- data.frame(rownames(df_3), df_3)
 colnames(Third)[1] <- "Taxa"
 dim(Third)
 
-Third$code_women <- 0
+Third$code <- 0
 dim(Third)
 
 M <- melt(Third)
@@ -243,7 +243,7 @@ P3 <- ggplot(M_third, aes(x = reorder(variable, Index), y = value, fill = Taxa))
   geom_bar(stat = "identity", position = "fill") +
   scale_y_continuous(labels = function(x) x * 100) +
   scale_fill_manual(values = col_taxa) +
-  labs(title = "", x = 'Samples (n=53)', y = 'Relative abundance') + # change number of women
+  labs(title = "", x = 'Early Luteal (EL) - Samples (n=53/61)', y = 'Relative abundance') + # change number of women
   theme(axis.text.x = element_blank(),
     axis.title = element_text(size = 7, family = 'sans'),
     legend.text = element_text(size = 7, family = 'sans'),
@@ -265,7 +265,7 @@ colnames(Fourth)[1] <- "Taxa"
 dim(Fourth)
 
 # Ad Missing value
-Fourth$code_women <- 0
+Fourth$code <- 0
 dim(Fourth)
 
 M <- melt(Fourth)
@@ -284,7 +284,7 @@ P4 <- ggplot(M_fourth, aes(x = reorder(variable, Index), y = value, fill = Taxa)
   geom_bar(stat = "identity", position = "fill") +
   scale_y_continuous(labels = function(x) x * 100) +
   scale_fill_manual(values = col_taxa) +
-  labs(title = "", x = 'Samples (n=44)', y = 'Relative abundance') + # change number of women
+  labs(title = "", x = 'Late Luteal (LL) - Samples (n=44/61)', y = 'Relative abundance') + # change number of women
   theme(axis.text.x = element_blank(),
     axis.title = element_text(size = 7, family = 'sans'),
     legend.text = element_text(size = 7, family = "sans"),
@@ -315,20 +315,3 @@ combined_plot
 
 # Save output
 ggsave("Panel_all_weeks_all_women.png",combined_plot , width = 15, height = 7, dpi = 300)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
