@@ -1,4 +1,4 @@
-ReadME for pipeline/scripts used for vaginal microbiome data analysis through 16S method in the paper Vinerbi et al 2025 (https://doi.org/10.1128/msystems.00983-25
+ReadME for pipeline/scripts used for vaginal microbiome data analysis through 16S method in the paper Vinerbi et al mSystems 2025 (https://doi.org/10.1128/msystems.00983-25
 )
 
 ***for questions please write to Elena Vinerbi (elenavinerbi@cnr.it), Fabio Chillotti (fabiochillotti@cnr.it) and Serena Sanna (serena.sanna@cnr.it)***
