@@ -1,0 +1,533 @@
+---
+title: "olink_batch2_normalization"
+author: "Dasha Zhernakova"
+date: "2025-10-07"
+output: html_document
+---
+
+```{r setup, include=FALSE,echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+```{r}
+library(OlinkAnalyze)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(tidyr)
+library(patchwork)
+
+setwd("/Users/Dasha/work/Sardinia/W4H/olink/batch12/data/")
+
+norm_type = "intensity"
+
+outfile_base = paste0("olink_batch12.", norm_type, ".")
+
+```
+
+## Olink Data Analysis: Batch 1 and Batch 2 Normalization
+
+
+This analysis combines Olink proteomics data from two batches, examining sample quality, batch effects, and performs  bridge normalization.
+
+
+### Read and summarize batch 1
+
+```{r, echo=TRUE}
+
+# samples that failed the batch 1 QC:
+b1_failed_qc <- c("100_2", "018_4", "102_3", "102_2", "091_2", "099_4", "109_1")
+
+# read both CVD and INF panel files removing failed samples
+npx_cvd <- read_NPX("CVD_Q-08150_NPX_2024-09-28.parquet") |>
+  dplyr::filter(!SampleID %in% b1_failed_qc)
+
+npx_inf <- read_NPX("INF_Q-14695_NPX_2024-09-28.parquet") |>
+  dplyr::filter(!SampleID %in% b1_failed_qc)
+
+# add LOD
+npx_cvd <- olink_lod(npx_cvd,
+                                lod_method = "FixedLOD",
+                                lod_file_path = "Explore 3072_Fixed LOD_2024-12-19.csv")
+
+npx_inf <- olink_lod(npx_inf,
+                                lod_method = "FixedLOD",
+                                lod_file_path = "Explore 3072_Fixed LOD_2024-12-19.csv")
+
+b1 <- bind_rows(npx_cvd, npx_inf) # Combined Explore 384 data
+
+if (norm_type == 'platecontrol'){
+  cat("Using PC normalizaed NPX values!!!\n")
+  b1 <- b1 |>
+   dplyr::mutate(NPX = PCNormalizedNPX,
+                 LOD = PCNormalizedLOD)
+}
+
+# remove Assays that failed QC in batch 1
+table(unique(b1[, c("Assay","AssayQC", "Normalization")])[,c("AssayQC", "Normalization")])
+unique(b1[b1$Normalization == 'EXCLUDED', c("Assay", "AssayQC", "Normalization")])
+b1 <- b1[b1$Normalization != 'EXCLUDED',]
+
+# Extract only real samples
+table(b1[,c("SampleType","SampleQC")])
+b1 <- b1[b1$SampleType == 'SAMPLE',]
+
+b1$geo <- "Trieste"
+
+## Remove assays with high missing rate > 10%
+num_samples = length(unique(b1$SampleID)) 
+
+b1_high_missing_assays <- b1 %>%
+  group_by(Assay) %>%
+  summarise(missing_rate = 1 - sum(!is.na(NPX)) / num_samples ) %>% 
+  filter(missing_rate > 0.1) %>% 
+  arrange(desc(missing_rate))
+
+cat("Proteins with missing rate > 10%:\n")
+b1_high_missing_assays
+if (nrow(b1_high_missing_assays) > 0) b1 <- b1[! b1$Assay %in% b1_high_missing_assays$Assay,]
+
+## Identify samples with missing rate > 10%
+num_prots = length(unique(b1$Assay)) 
+b1_high_missing_samples <- b1 %>%
+  group_by(SampleID) %>%
+  summarise(missing_rate = 1 - sum(!is.na(NPX)) / num_prots ) %>% 
+  filter(missing_rate > 0.1) %>% 
+  arrange(desc(missing_rate))
+
+cat("Samples with missing rate > 10%:\n")
+b1_high_missing_samples
+if (nrow(b1_high_missing_samples) > 0) b1 <- b1[! b1$SampleID %in% b1_high_missing_samples$SampleID,]
+
+
+# leave only non-control assays
+b1 <- b1[b1$AssayType == 'assay',]
+
+# Identify proteins with high rate of values below LOD
+num_below_lod <- b1[,c("Assay", "Panel", "NPX" ,"LOD", "Count")] %>%
+  group_by(Assay, Panel) %>%
+  mutate(above_lod = NPX > LOD) %>%
+  summarise(
+    count_above_lod = sum(above_lod == TRUE),
+    count_below_lod = sum(above_lod == FALSE),
+    mean_abund_count = mean(Count),
+    fraction_above_lod = sum(above_lod == TRUE) / n(),
+    .groups = "drop"
+  )
+
+# 3 proteins measured in CVD and INF, keep only one based on number of samples below LOD
+cat("There are 3 proteins measured in both INF and CVD\n")
+prots_cvd_inf <- intersect(b1[b1$Panel == 'Cardiometabolic', ]$Assay, b1[b1$Panel == 'Inflammation', ]$Assay)
+prots_cvd_inf
+
+num_below_lod[num_below_lod$Assay %in% prots_cvd_inf,]
+b1 <- b1[!(b1$Assay == "CXCL8" & b1$Panel == "Inflammation"), ]
+b1 <- b1[!(b1$Assay == "IL6" & b1$Panel == "Cardiometabolic"), ]
+b1 <- b1[!(b1$Assay == "TNF" & b1$Panel == "Inflammation"), ]
+
+
+
+cat("Batch 1: number of samples: ", length(unique(b1$SampleID)), "for", length(unique(gsub("_.*","",b1$SampleID))), "unique women\n")
+cat("Batch 1: number of proteins:", length(unique(b1$Assay)), "\n")
+```
+
+### Read and summarize batch 2
+```{r, echo=TRUE}
+b2 <- read_NPX("Q-08152_NPX_2025-09-17.parquet")
+
+# Add LOD
+b2 <- OlinkAnalyze::olink_lod(b2,
+                                lod_method = "FixedLOD",
+                                lod_file_path = "Explore HT_Fixed LOD.csv")
+
+if (norm_type == 'platecontrol'){
+  cat("Using PC normalized NPX values!!!\n")
+  b2 <- b2 |>
+   dplyr::mutate(NPX = PCNormalizedNPX,
+                 LOD = PCNormalizedLOD)
+}
+
+b2$geo <- "Trieste"
+b2[startsWith(b2$SampleID, "S"), "geo"] <- "Sardinia"
+b2[startsWith(b2$SampleID, "B"), "geo"] <- "Bologna"
+
+
+# remove Assays that failed QC in batch 2
+table(unique(b2[, c("Assay","AssayQC", "Normalization")])[,c("AssayQC", "Normalization")])
+cat("Number of proteins with QC status = WARN:", nrow(unique(b2[b2$AssayQC == 'WARN', "Assay"])), ", will remove them\n")
+unique(b2[b2$AssayQC == 'WARN', "Assay"])
+b2 <- b2[b2$AssayQC != 'WARN',]
+
+# Extract only real samples
+table(b2[,c("SampleType","SampleQC")])
+b2 <- b2[b2$SampleType == 'SAMPLE',]
+
+num_samples = length(unique(b2$SampleID)) 
+## Remove assays with high missing rate > 10%
+b2_high_missing_assays <- b2 %>%
+  group_by(Assay) %>%
+  summarise(missing_rate = 1 - sum(!is.na(NPX)) / num_samples ) %>% 
+  filter(missing_rate > 0.1) %>% 
+  arrange(desc(missing_rate))
+
+cat("Proteins with missing rate > 10%:\n")
+b2_high_missing_assays
+if (nrow(b2_high_missing_assays) > 0) b2 <- b2[! b2$Assay %in% b2_high_missing_assays$Assay,]
+
+
+## Identify samples with missing rate > 10%
+num_prots = length(unique(b2$Assay))
+b2_high_missing_samples <- b2 %>%
+  group_by(SampleID) %>%
+  summarise(missing_rate = 1 - sum(!is.na(NPX)) / num_prots) %>% 
+  filter(missing_rate > 0.1) %>% 
+  arrange(desc(missing_rate))
+
+cat("Samples with missing rate > 10%:\n")
+b2_high_missing_samples
+if (nrow(b2_high_missing_samples) > 0) b2 <- b2[! b2$SampleID %in% b2_high_missing_samples$SampleID,]
+
+# leave only non-control assays
+b2 <- b2[b2$AssayType == 'assay',]
+
+cat("Batch 1: number of samples: ", length(unique(b2$SampleID)), "for", length(unique(gsub("_.*","",b2$SampleID))), "unique women\n")
+cat("Batch 1: number of proteins:", length(unique(b2$Assay)), "\n")
+
+```
+
+### Look at the overlap between batches:
+
+```{r, echo=TRUE}
+cat("Protein with plate control normalization: ", as.character(unique(b1[b1$Normalization == "Plate control", "Assay"])), "\n")
+
+# Use PC normalization for PNLIPRP2 in batch 2 as well
+b2[b2$Assay == "PNLIPRP2", ]$NPX <- b2[b2$Assay == "PNLIPRP2", ]$PCNormalizedNPX
+b2[b2$Assay == "PNLIPRP2", ]$Normalization <- "Plate control"
+
+overlapping_samples <- intersect(b1$SampleID, b2$SampleID)
+cat ("Number of overlapping samples usable for bridging:", length(overlapping_samples), "\n")
+
+overlapping_prots <- intersect(unique(b1[b1$AssayType == 'assay',]$Assay), b2[b2$AssayType == "assay", ]$Assay)
+cat ("Number of overlapping proteins:", length(overlapping_prots), "\n")
+
+```
+
+### PCA plots before bridging
+
+
+```{r, echo=TRUE}
+
+# Plot PCA to see if bridging samples are outliers
+b1_before_br <- b1 |>
+  mutate(Type = if_else(SampleID %in% overlapping_samples,
+                               paste0("batch1_bridge"),
+                               paste0("batch1_sample")),
+         Batch = "batch1")
+
+b2_before_br <- b2 |>
+  dplyr::mutate(Type = if_else(SampleID %in% overlapping_samples,
+                               paste0("batch2_bridge"),
+                               paste0("batch2_sample")),
+                Batch = "batch2")
+
+### PCA plot
+pca_b1 <- olink_pca_plot(df = b1_before_br,
+                                          color_g = "Type",
+                                          quiet = TRUE) 
+pca_b2 <- olink_pca_plot(df = b2_before_br,
+                                        color_g = "Type",
+                                        quiet = TRUE)
+pca_b2_geo <- olink_pca_plot(df = b2_before_br,
+                         color_g = "geo",
+                         quiet = TRUE)
+```
+
+
+Batch 1:
+``` {r, echo=TRUE}
+pca_b1[[1]]
+```
+
+Batch 2:
+``` {r, echo=TRUE}
+pca_b2[[1]]
+#outlier sample at the bottom: 042_2
+#We have to keep it because bridge normalization doesn't work with less than 40 samples
+outlier = "042_2"
+
+```
+
+Batch 2 colored by place of sample collection, we see a clear difference between samples from Bologna and the rest:
+``` {r, echo=TRUE}
+pca_b2_geo[[1]]
+```
+
+### Plot and compare the NPX distribution of shared proteins from 2 batches before bridge normalization
+
+```{r, echo=TRUE}
+npx_df <- bind_rows(b1_before_br[b1_before_br$Assay %in% overlapping_prots,], 
+                    b2_before_br[b2_before_br$Assay %in% overlapping_prots,])
+
+# Plot NPX density before bridging normalization
+npx_df %>%
+  mutate(Panel = gsub("Olink ", "", Panel)) %>%
+  ggplot(aes(x = NPX, fill = Batch)) +
+  geom_density(alpha = 0.4) +
+  olink_fill_discrete(coloroption = c("red", "darkblue")) +
+  set_plot_theme() +
+  ggtitle("Before bridging normalization: NPX distribution") +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        strip.text = element_text(size = 16),
+        legend.title = element_blank(),
+        legend.position = "top")
+```
+
+### Get number of available bridge samples for each protein
+```{r,echo=TRUE}
+
+
+npx_df_subs <- npx_df[,c("SampleID", "Assay", "NPX","Batch", "Count")]
+npx_df_subs <- npx_df_subs[npx_df_subs$Assay %in% overlapping_prots,]
+#npx_df_subs <- npx_df_subs[npx_df_subs$Count > 200,]
+res <- data.frame()
+for (p in overlapping_prots){
+  b1_samples <- npx_df_subs[npx_df_subs$Assay == p & npx_df_subs$Batch == "batch1" & !is.na(npx_df_subs$NPX) , "SampleID"]
+  b2_samples <- npx_df_subs[npx_df_subs$Assay == p & npx_df_subs$Batch == "batch2" & !is.na(npx_df_subs$NPX), "SampleID"]
+  overlap <- length(intersect(b1_samples$SampleID, b2_samples$SampleID))
+  res <- rbind(res, c(p, overlap))
+}
+
+colnames(res) <- c("protein", "num_overlapping_samples")
+not_enough_samples <- res[res$num_overlapping_samples < length(overlapping_samples),]
+
+cat("Proteins with less than" , length(overlapping_samples), "bridging samples:\n")
+not_enough_samples
+
+if (nrow(not_enough_samples) == 0) cat("There are no proteins with less than 40 overlapping samples!\n")
+```
+
+
+
+### Perform bridging
+
+``` {r, echo=TRUE, warning=TRUE}
+
+overlap_samples_list <- list("DF1" = overlapping_samples,
+                             "DF2" = overlapping_samples)
+
+npx_br_data <- olink_normalization_bridge(project_1_df = b1_before_br[b1_before_br$Assay %in% overlapping_prots,],
+                                          project_2_df = b2_before_br[b2_before_br$Assay %in% overlapping_prots,],
+                                          bridge_samples = overlap_samples_list,
+                                          project_1_name = "batch1",
+                                          project_2_name = "batch2",
+                                          project_ref_name = "batch2")
+
+
+#Bridging recommendations per protein:
+prot_bridgable <- unique(npx_br_data[,c("Assay", "BridgingRecommendation")])
+table(prot_bridgable$BridgingRecommendation)
+
+cat("Proteins that are not bridgeable: \n")
+failed_prots <- prot_bridgable[prot_bridgable$BridgingRecommendation == "NotBridgeable", ]$Assay
+failed_prots
+
+na_qs_prots <- unique(npx_br_data[npx_br_data$BridgingRecommendation == 'QuantileSmoothing' & is.na(npx_br_data$QSNormalizedNPX),]$Assay)
+failed_prots <- c(failed_prots, na_qs_prots)
+
+cat("Proteins incompletely bridged\n")
+na_qs_prots
+```
+
+### Make the clean bridge-normalized dataset:
+``` {r, echo=TRUE}
+
+npx_br_data_clean <- npx_br_data  |> 
+  filter(! Assay %in% failed_prots) |>
+  mutate(NPX_normalized = NA) |> 
+  mutate(NPX_normalized = case_when(
+    BridgingRecommendation == "MedianCentering" ~ MedianCenteredNPX,
+    BridgingRecommendation == "QuantileSmoothing" ~ QSNormalizedNPX,
+    .default = NPX_normalized))
+
+
+```
+
+Write resulting files
+```{r}
+# write bridged combined dataset only shared proteins
+write.table(npx_br_data, file = paste0(outfile_base, "bridged_raw.txt"), quote = F, sep = "\t", row.names = F)
+write.table(npx_br_data_clean, file = paste0(outfile_base, "clean_bridged_raw.txt"), quote = F, sep = "\t", row.names = F)
+
+# add proteins from batch 2
+b2_before_br$NPX_normalized <- b2_before_br$NPX
+npx_br_data_clean_add_b2 <- bind_rows(npx_br_data_clean, b2_before_br[! b2_before_br$Assay %in% npx_br_data_clean$Assay,])
+
+# for bridge samples keep only batch 2
+npx_br_data_clean_add_b2 <- npx_br_data_clean_add_b2[npx_br_data_clean_add_b2$Type != "batch1_bridge" , ]
+write.table(npx_br_data_clean_add_b2, file = paste0(outfile_base, "bridged_all_proteins.txt"), quote = F, sep = "\t", row.names = FALSE)
+
+# make a summary table per protein
+prot_summary <- unique(npx_br_data_clean_add_b2[,c("Assay", "UniProt", "OlinkID", "OlinkID_E3072", "BridgingRecommendation")])
+prot_summary$bridged_successfully <- ifelse (prot_summary$Assay %in% failed_prots, F, T)
+prot_summary$batch <- ifelse(prot_summary$Assay %in% npx_br_data_clean$Assay, "batch_1+2", "batch_2")
+
+```
+
+### Bridgability plots
+```{r, echo=TRUE}
+npx_br_data_bridgeable_plt <- olink_bridgeability_plot(
+  data = npx_br_data[npx_br_data$OlinkID != "OID43204",],
+  median_counts_threshold = 150,
+  min_count = 10
+  )
+
+#plots for a bridgeable protein
+npx_br_data_bridgeable_plt[["OID44127"]] #PROK1
+
+#plots for non-bridgeable proteins
+npx_br_data_bridgeable_plt[["OID41012"]] #CHEK2
+npx_br_data_bridgeable_plt[["OID42880"]]
+npx_br_data_bridgeable_plt[["OID43064"]]
+npx_br_data_bridgeable_plt[["OID41296"]]
+```
+
+
+
+## Filtering after bridging
+### Filter out proteins with high fraction below LOD 
+``` {r}
+num_below_lod <- npx_br_data_clean_add_b2[,c("Assay",  "NPX" ,"LOD", "Count")] %>%
+  group_by(Assay) %>%
+  mutate(above_lod = NPX > LOD) %>%
+  summarise(
+    count_above_lod = sum(above_lod == TRUE),
+    count_below_lod = sum(above_lod == FALSE),
+    mean_abund_count = mean(Count),
+    fraction_above_lod = sum(above_lod == TRUE) / n(),
+    .groups = "drop"
+  ) %>%
+  arrange(count_below_lod)
+
+ggplot(num_below_lod, aes(x = reorder(Assay, count_above_lod), y = count_above_lod)) +
+  geom_bar(stat = "identity", fill = 'dodgerblue3') +
+  geom_hline(yintercept = 50, color = 'red') + 
+  geom_hline(yintercept = 150, color = 'red') + 
+  labs(title = "Number of samples above LOD",
+       x = "Assay",
+       y = "# samples above LOD") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 5))
+
+
+prots_to_remove_lod <- na.omit(num_below_lod[num_below_lod$count_above_lod < 150, ]$Assay)
+cat("The number of proteins to remove, because they have less than 150 samples above LOD:\n")
+length(prots_to_remove_lod)
+
+clean_wide <- as.data.frame(npx_br_data_clean_add_b2[,c("SampleID", "Assay", "NPX_normalized")] %>%
+  pivot_wider(names_from = "Assay", values_from = "NPX_normalized"))
+dim(clean_wide)
+
+# removing proteins with # samples below LOD > 150
+clean_wide[,prots_to_remove_lod] <- NULL
+cat("Dimensions of the protein dataset after removing proteins with too many values below LOD:\n")
+dim(clean_wide)
+cat("Of them the number of overlapping proteins between batch1 and batch2:\n")
+length(colnames(clean_wide)[colnames(clean_wide) %in% overlapping_prots])
+
+
+write.table(clean_wide, file = paste0(outfile_base, "bridged_all_proteins_lod150_wide.txt"), quote = F, sep = "\t", row.names = FALSE)
+
+prot_summary$pass_LOD_filter <- ifelse(! prot_summary$Assay %in% prots_to_remove_lod, T, F)
+
+
+# Alternative approach: Values below LOD to NA
+npx_br_data_clean_add_b2_lod_na <- npx_br_data_clean_add_b2
+npx_br_data_clean_add_b2_lod_na[npx_br_data_clean_add_b2_lod_na$NPX < npx_br_data_clean_add_b2_lod_na$LOD, "NPX_normalized"] <- NA
+
+clean_wide_below_lod_na <- as.data.frame(npx_br_data_clean_add_b2_lod_na[,c("SampleID", "Assay", "NPX_normalized")] %>%
+  pivot_wider(names_from = "Assay", values_from = "NPX_normalized"))
+
+clean_wide_below_lod_na[,prots_to_remove_lod] <- NULL
+write.table(clean_wide_below_lod_na, file = paste0(outfile_base, "bridged_all_proteins_lod150_below_lod_to_NA_wide.txt"), quote = F, sep = "\t", row.names = FALSE)
+```
+
+### Remove outliers
+```{r}
+
+remove_outliers_per_feature <- function(d, sd_cutoff = 4) {
+  zscore <- scale(d)  # Compute z-scores
+  d[abs(zscore) > sd_cutoff] <- NA  # Replace outliers with NA
+  return(d)
+}
+
+
+remove_outliers_dataframe <- function(df, sd_cutoff = 4) {
+  # Create a copy of the data frame to store the outlier mask
+  outlier_mask <- df %>%
+    mutate(across(.cols = -c(SampleID), .fns = ~abs(scale(.)) > sd_cutoff))
+  
+  # Apply the outlier removal
+  df_cleaned <- df %>%
+    mutate(across(.cols = -c(SampleID), .fns = ~remove_outliers_per_feature(., sd_cutoff)))
+  
+  # Return the cleaned data and the outlier mask
+  list(cleaned_data = df_cleaned, outlier_mask = outlier_mask)
+}
+
+
+
+rm_outliers_tmp <- remove_outliers_dataframe(clean_wide,  sd_cutoff = 4)
+rm_outliers <- rm_outliers_tmp$cleaned_data
+rm_outliers <- data.frame(SampleID = rm_outliers$SampleID,
+                          ID = gsub("_.*","",rm_outliers$SampleID),
+                          rm_outliers[,2:ncol(rm_outliers)])
+
+write.table(rm_outliers, file = paste0(outfile_base, "bridged_all_proteins_lod150_wide_rm_outliers_4sd.txt"), quote = F, sep = "\t", row.names = FALSE)
+
+num_outliers <- data.frame(colSums(rm_outliers_tmp$outlier_mask[,2:ncol(rm_outliers_tmp$outlier_mask)], na.rm = T)) %>%
+  rownames_to_column(var = "prot")
+colnames(num_outliers)[2] <- "num_outliers_4sd"
+
+rm_outliers_tmp_6 <- remove_outliers_dataframe(clean_wide,  sd_cutoff = 6)
+num_outliers_6 <- data.frame(colSums(rm_outliers_tmp_6$outlier_mask[,2:ncol(rm_outliers_tmp_6$outlier_mask)], na.rm = T)) %>%
+  rownames_to_column(var = "prot")
+colnames(num_outliers_6)[2] <- "num_outliers_6sd"
+
+num_outliers <- left_join(num_outliers, num_outliers_6, by = 'prot')
+num_outliers <- num_outliers[order(num_outliers$num_outliers_4sd, decreasing = T),]
+
+
+
+ggplot(num_outliers[num_outliers$num_outliers_4sd > 3,], aes(x = reorder(prot, -num_outliers_4sd), y = num_outliers_4sd)) +
+    geom_col(aes(fill = "4SD Outliers"), width = 0.7) +
+    geom_col(aes(y = num_outliers_6sd, fill = "6SD Outliers"), width = 0.7) +
+    scale_fill_manual(values = c("4SD Outliers" = "lightblue", "6SD Outliers" = "darkblue")) + 
+  labs(title = "Outliers by Protein",
+       x = "Protein",
+       y = "Number of Outliers",
+       fill = "Outlier Type") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 3))
+  
+
+write.table(num_outliers, file = paste0(outfile_base, "bridged_all_proteins_lod150_wide.num_outliers_4sd.txt"), quote = F, sep = "\t")
+
+
+# batch 1 suspicious proteins with many outliers
+rm_outliers_b1_6 <- remove_outliers_dataframe(clean_wide[clean_wide$SampleID %in% npx_br_data[npx_br_data$Batch == 'batch1', ]$SampleID, ],  sd_cutoff = 6)
+num_outliers_b1_6 <- data.frame(colSums(rm_outliers_b1_6$outlier_mask[,2:ncol(rm_outliers_b1_6$outlier_mask)], na.rm = T)) %>%
+  rownames_to_column(var = "prot")
+colnames(num_outliers_b1_6)[2] <- "num_outliers_6sd"
+
+prots_many_outliers <- num_outliers_b1_6[num_outliers_b1_6$num_outliers_6sd > 0,]
+qs_prots <- unique(npx_br_data[npx_br_data$BridgingRecommendation == "QuantileSmoothing", "Assay"])
+qs_prots$outliers_6sd <- ifelse(qs_prots$Assay %in% prots_many_outliers$prot, T, F)
+
+
+write.table(qs_prots, file = paste0(outfile_base, "proteins_QS_and_outliers.txt"), quote = F, sep = "\t")
+
+prot_summary$suspicious_outliers <- ifelse(prot_summary$Assay %in% qs_prots[qs_prots$outliers_6sd == T,]$Assay, T, F)
+write.table(prot_summary, file = paste0(outfile_base, "protein_summary_and_QC.txt"), quote = F, sep = "\t")
+
+```
+
