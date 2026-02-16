@@ -1,8 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
 
 In this folder you will find scripts used for the paper "Longitudinal
 plasma proteomics along a menstrual cycle highlights the regulatory
