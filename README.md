@@ -1,14 +1,14 @@
 # Women4Health
 
-In this folder we share code used in manuscripts that use data from the the Women4Health cohort.
+In this folder we share code used in manuscripts that leveraged data from the the Women4Health cohort.
 ***please cite the corresponding papers if you use code from these folders - thank you!***
 
 1. Code_for_Busonero_et_al_2023 contains code for Busonero F. et al, EHJ Open 2024 https://doi.org/10.1093/ehjopen/oeae012 
 2. Code_for_Vinerbi_et_al contains code for Vinerbi E. et al, mSystems 2025 https://doi.org/10.1128/msystems.00983-25
   (or Biorxiv https://doi.org/10.1101/2025.03.12.642767 )
   [ Note that the human-depleted 16S rRNA and ITS sequences are deposited at the Sequence Read Archive (SRA) repository under BioProject accession number PRJNA1222832. ]
-3. Code_for_Zhernakova_et_al contains code for Zhernakova D. et al, 2026, submitted 
-4. Code_for_diet_paper (manuscript in preparation)
+3. Code_for_Zhernakova_et_al contains code for Zhernakova D. et al, 2026, under evaluation at Nature Communication, preprint at: https://doi.org/10.21203/rs.3.rs-9148671/v1  
+4. Code_for_LoFaro_et_al (manuscript in preparation)
 
 The Women4Health cohort is funded by ERC Starting Grant 2022 to Serena Sanna (project SEMICYCLE), and RC 2020 to Prof. Giorgia Girotto. Expansion have been funded via grants Age-it  (Ministero dell'Universita' e Ricerca MUR, bandi PNRR missione 4 componente 2, P08) and NutrAge (CNR)
 
@@ -16,7 +16,7 @@ Link to SEMICYCLE project:
 https://irgb.cnr.it/projects/w4h-2-3-6/
 
 Link to Women4Health project: 
-www.women4health.it 
+www.women4health.it  
 
 https://irgb.cnr.it/projects/w4h-3/
 
