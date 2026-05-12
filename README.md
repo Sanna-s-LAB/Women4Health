@@ -8,7 +8,7 @@ In this folder we share code used in manuscripts that leveraged data from the th
   (or Biorxiv https://doi.org/10.1101/2025.03.12.642767 )
   [ Note that the human-depleted 16S rRNA and ITS sequences are deposited at the Sequence Read Archive (SRA) repository under BioProject accession number PRJNA1222832. ]
 3. Code_for_Zhernakova_et_al contains code for Zhernakova D. et al, 2026, under evaluation at Nature Communication, preprint at: https://doi.org/10.21203/rs.3.rs-9148671/v1  
-4. Code_for_LoFaro_et_al (manuscript in preparation)
+4. Code_for_LoFaro_et_al, 2026 (manuscript in preparation)
 
 The Women4Health cohort is funded by ERC Starting Grant 2022 to Serena Sanna (project SEMICYCLE), and RC 2020 to Prof. Giorgia Girotto. Expansion have been funded via grants Age-it  (Ministero dell'Universita' e Ricerca MUR, bandi PNRR missione 4 componente 2, P08) and NutrAge (CNR)
 
