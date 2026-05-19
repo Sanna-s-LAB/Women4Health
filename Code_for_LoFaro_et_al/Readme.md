@@ -6,4 +6,5 @@ Here you will find the code used to generate figures and run analyses described 
 
 The code is located in two folders, to separate those used to analyze dietary data from those used to analyze microbiome data
 
-A scheme file describes each script and the expected output
+
+**IMPORTANT NOTE:** *A scheme file (available in both docx and pdf) describes each script function and the expected output.*
