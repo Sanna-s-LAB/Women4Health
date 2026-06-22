@@ -150,6 +150,9 @@ b2$geo <- "Trieste"
 b2[startsWith(b2$SampleID, "S"), "geo"] <- "Sardinia"
 b2[startsWith(b2$SampleID, "B"), "geo"] <- "Bologna"
 
+# leave only non-control assays
+b2 <- b2[b2$AssayType == 'assay',]
+
 
 # remove Assays that failed QC in batch 2
 table(unique(b2[, c("Assay","AssayQC", "Normalization")])[,c("AssayQC", "Normalization")])
@@ -186,8 +189,6 @@ cat("Samples with missing rate > 10%:\n")
 b2_high_missing_samples
 if (nrow(b2_high_missing_samples) > 0) b2 <- b2[! b2$SampleID %in% b2_high_missing_samples$SampleID,]
 
-# leave only non-control assays
-b2 <- b2[b2$AssayType == 'assay',]
 
 cat("Batch 1: number of samples: ", length(unique(b2$SampleID)), "for", length(unique(gsub("_.*","",b2$SampleID))), "unique women\n")
 cat("Batch 1: number of proteins:", length(unique(b2$Assay)), "\n")

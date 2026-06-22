@@ -194,7 +194,7 @@ run_wide_models <- function(d_wide, pheno, covariates, pair){
 
 # proteins vs phenotypes/hormones
 
-gam_res <- read.delim(paste0(out_basedir, "prot_vs_phenotypes.gam.spline.shared_prots.txt"), as.is = T, check.names = F, sep = "\t")
+gam_res <- read.delim(paste0(out_basedir, "prot_vs_phenotypes.gam.spline.all_prots.txt"), as.is = T, check.names = F, sep = "\t")
 pairs <- gam_res[gam_res$BH_pval < 0.05, c("prot", "pheno")]
 
 ncores <- detectCores()-1

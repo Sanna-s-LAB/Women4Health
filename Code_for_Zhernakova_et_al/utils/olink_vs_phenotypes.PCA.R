@@ -8,9 +8,6 @@ library(lubridate)
 library(purrr)
 library(tibble)
 
-set.seed(123)
-out_basedir <- "results12/"
-
 #
 # NB! Functions are at the end of the code, need to be run first
 #
@@ -20,36 +17,24 @@ out_basedir <- "results12/"
 # Read and format the data
 ################################################################################
 
-d_wide <- read.delim("data/olink_batch12.intensity.bridged_all_proteins_lod150_wide.txt", as.is = T, check.names = F, sep = "\t", colClasses = c(ID = "character"))
+set.seed(123)
+out_basedir <- "results12/"
+
+d_wide <- read.delim("data/olink_batch12.intensity.bridged_all_proteins_lod150_wide.txt", as.is = T, check.names = F, sep = "\t")
 batch_info <- read.delim("data/batch_info.txt", as.is = T, check.names = F, sep = "\t")
 
 d_wide$TP <- gsub(".*_","", d_wide$SampleID)
 d_wide$ID <- gsub("_.*","", d_wide$SampleID)
 d_wide <- d_wide %>% select(SampleID, ID, TP, everything())
 
-batch2_shared_prots <- colnames(d_wide)[colSums(is.na(d_wide)) < 50]
-d_wide_shared <- d_wide[ ,batch2_shared_prots]
 d_wide_b2 <- d_wide[d_wide$SampleID %in% batch_info[batch_info$Batch == 'batch2', "SampleID"],]
 
-dim(d_wide)
 dim(d_wide_b2)
-dim(d_wide_shared)
 
 
-################################################################################
-# PCA on proteins with missing data (nipals) on shared proteins
-################################################################################
-
-res_pca <- run_pca_nipals_per_tp(d_wide_shared, nPCs = 70)
-num_pcs_80_b12 <- res_pca$num_pcs_80
-pca_per_tp_b12 <- res_pca$pca_per_tp
-
-max(as.numeric(num_pcs_80_b12))
-# [1] 60
-write.table(pca_per_tp_b12, file = paste0(out_basedir, "olink_batch12_shared_prot_rm_outliers_4sd.PCA.txt"), quote = F, sep = "\t", row.names = FALSE)
 
 ################################################################################
-# PCA on proteins with missing data (nipals) on batch2 data
+# PCA on proteins with missing data (nipals)
 ################################################################################
 res_pca_b2 <- run_pca_nipals_per_tp(d_wide_b2, nPCs = 60)
 
@@ -216,6 +201,11 @@ for (tp in 1:4){
 pdf(paste0(out_basedir, 'correlations_with_covariates/plots/corrplots_PC_vs_covariates.pdf'), width = 20, height  = 5)
 draw(plot_list[[1]] + plot_list[[2]] + plot_list[[3]] + plot_list[[4]], gap = unit(1, "cm"))
 dev.off()
+
+################################################################################
+# PERMANOVA for medication use
+################################################################################
+source("utils/prot_vs_medication.R")
 
 
 ################################################################################

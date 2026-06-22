@@ -5,7 +5,7 @@ library(readr)
 library(bslib)
 library(base64enc)
 
-setwd("/Users/Dasha/work/Sardinia/W4H/olink/batch12/results12/intensity_shared_prots_261125/network")
+setwd("/Users/Dasha/work/Sardinia/W4H/olink/batch12/results12/intensity_all_prots_220526/network")
 edges_data <- read.delim("network_data/network.edges.txt", sep = "\t", check.names = F, as.is = T)  
 nodes_data <- read.delim("network_data/network.nodes.txt", sep = "\t", check.names = F, as.is = T) 
 annot <- read.delim("Su_MR.subset_cut.txt", sep = "\t", check.names = F, as.is = T)
