@@ -626,9 +626,8 @@ run_limma<-function(joined_data, tp1, tp2, all_prots, covariate_names) {
   contrast<- makeContrasts(Diff = phase2 - phase1, levels=design)
   
   # apply linear model to each protein
-  # Robust regression provides an alternative to least squares regression that works with less restrictive assumptions. Specifically, it provides much better regression coefficient estimates when outliers are present in the data
-  fit<-lmFit(t(df[,all_prots]), design=design,  method="robust", correlation =
-               corfit$consensus )
+  fit<-lmFit(t(df[,all_prots]), block = df$ID, design=design,  method="ls", correlation =
+               corfit$consensus)
   
   # Extract group means directly from the fit coefficients
   #group_means <- as.data.frame(fit$coefficients)[,c("phase1", "phase2")]
